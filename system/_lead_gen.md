@@ -1,6 +1,6 @@
 > **【修正・学習時 (Update/Learning)】**:
 > 本ワークフローの修正や学習を行う際は、以下の「Hybrid Loading Protocol」を遵守してください。
-> 1. **Core Rules (必須)**: `knowledge/01_general_rules.md`, `knowledge/03_design_philosophy.md`, `knowledge/04_meta_rules.md` を読み込む。
+> 1. **Core Rules (必須)**: `knowledge/00_core/01_general_rules.md`, `knowledge/03_design/03_design_philosophy.md`, `knowledge/00_core/04_meta_rules.md` を読み込む。
 > 2. **Data Query (検索)**: クライアント情報や事業内容は `knowledge/tools/query_knowledge.py` を使用して必要な分だけ取得する（全ファイル読み込み禁止）。
 > この際の「学習」とは、**「スクリプト의 直接修正」**と**「得られた知見の総合ナレッジ（DB含む）への反映」**を指します。
 
