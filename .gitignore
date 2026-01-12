@@ -1,0 +1,21 @@
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Output and data
+02_output/
+*.csv
+*.xlsx
+
+# Logs
+*.txt
+*.log
+
+# System files
+.DS_Store
+.vscode/
+.idea/
+
+# Environment variables
+.env
