@@ -98,6 +98,21 @@ async def analyze_website(page, url):
     
     return info
 
+# 電話番号フォーマット関数
+def format_phone_number(phone_text):
+    if not phone_text:
+        return "不明"
+    # 空白除去
+    text = phone_text.strip()
+    # +81除去 -> 0への置換
+    if text.startswith("+81"):
+        # "+81 75-123-4567" -> "075-123-4567"
+        # "+81 90-1234-5678" -> "090-1234-5678"
+        text = text.replace("+81", "0").replace(" ", "")
+        # もし市外局番の間にスペースが残っていたら調整（ケースバイケースだが一旦強制結合）
+        # Google Mapsは "+81 75-123..." のように返すことが多い
+    return text
+
 async def collect_leads(keyword, max_results=20, progress_callback=None):
     """
     Google Mapsから企業情報を収集 + Webサイト解析
@@ -150,7 +165,7 @@ async def collect_leads(keyword, max_results=20, progress_callback=None):
         total_to_process = min(len(articles), max_results)
         report_progress(0, total_to_process, f"✅ {total_to_process}件の候補を取得。詳細解析を開始します...")
 
-        # 解析用ページ（タブ）を作成して並行処理っぽくする手もあるが、今回は直列で確実に
+        # 解析用ページ
         analysis_page = await context.new_page()
 
         for i, article in enumerate(articles[:total_to_process]):
@@ -160,7 +175,23 @@ async def collect_leads(keyword, max_results=20, progress_callback=None):
                 
                 # 詳細取得クリック
                 await article.click()
-                await asyncio.sleep(1.5)
+                
+                # --- データの不整合を防ぐための待機処理 ---
+                # 詳細パネルのタイトル(h1)が、クリックした企業名(name)を含むまで待つ
+                # タイムアウトした場合はリトライ、またはスキップ
+                try:
+                    # h1テキストがnameを含むかチェック（正規化して比較）
+                    # Google Mapsのタイトルは h1.DUwDvf というクラスを持つことが多いが、h1タグ汎用で探す
+                    await page.wait_for_function(
+                        f"""() => {{
+                            const h1 = document.querySelector('h1');
+                            return h1 && h1.innerText.includes("{name}");
+                        }}""",
+                        timeout=5000
+                    )
+                except:
+                    # タイトル一致が確認できない場合、少しだけ待ってそのまま進む（名前表記揺れの可能性もあるため）
+                    await asyncio.sleep(2)
                 
                 # --- 基本情報取得 ---
                 # 業種 (カテゴリ)
@@ -174,8 +205,9 @@ async def collect_leads(keyword, max_results=20, progress_callback=None):
 
                 # 電話
                 phone_elem = await page.query_selector('button[data-item-id^="phone:tel:"]')
-                phone = await phone_elem.get_attribute("aria-label") if phone_elem else "不明"
-                phone = phone.replace("電話番号: ", "").strip()
+                phone_raw = await phone_elem.get_attribute("aria-label") if phone_elem else "不明"
+                phone_raw = phone_raw.replace("電話番号: ", "").strip()
+                phone = format_phone_number(phone_raw) # フォーマット適用
                 
                 # Webサイト
                 website_elem = await page.query_selector('a[data-item-id="authority"]')
@@ -201,7 +233,7 @@ async def collect_leads(keyword, max_results=20, progress_callback=None):
                     "問合せフォーム": "あり" if web_info["has_form"] else "なし/不明",
                     "SNS": ", ".join(web_info["sns"]) if web_info["sns"] else "なし",
                     "Webカタログ": catalog_text,
-                    "備考": " ".join(web_info["remarks"]),
+                    # "備考": " ".join(web_info["remarks"]), # 備考は削除リクエストあり
                     "収集日": datetime.datetime.now().strftime("%Y-%m-%d")
                 })
                 
