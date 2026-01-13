@@ -207,7 +207,8 @@ if start_btn:
             def update_progress(current, total, status):
                 pct = int((current / total) * 10 if total > 0 else 0)
                 bar = "▓" * pct + "░" * (10 - pct)
-                progress_area.info(f"【収集進行中】 {status}  [{bar}] {current}/{total if total > 0 else '?'}")
+                # Layout: [Progress Bar] Status Count
+                progress_area.info(f"【収集進行中】 [{bar}] {status}  ({current}/{total if total > 0 else '?'})")
             
             results = asyncio.run(collect_leads(keyword, count, update_progress))
             progress_area.empty()
@@ -215,7 +216,7 @@ if start_btn:
             if results:
                 df = pd.DataFrame(results)
                 # カラムの並び順を調整（ユーザー指定の順序：SNSの右横にWebカタログ）
-                cols = ["業種", "企業名", "Webサイト", "電話番号", "問合せフォーム", "SNS", "Webカタログ", "住所", "備考", "収集日"]
+                cols = ["業種", "企業名", "Webサイト", "電話番号", "問合せフォーム", "SNS", "Webカタログ", "住所", "収集日"]
                 # 実際に存在するカラムだけで構成
                 existing_cols = [c for c in cols if c in df.columns]
                 rest_cols = [c for c in df.columns if c not in existing_cols]
@@ -288,4 +289,14 @@ if st.session_state.leads_df is not None:
 else:
     # 初期画面
     st.markdown("<br><br><br>", unsafe_allow_html=True)
-    st.info("👆 上のフォーム条件を入力して「収集開始」を押してください。<br>Google MapsとWebサイト解析を行い、営業リストを自動作成します。")
+    st.info("""
+    ### 💡 使い方
+    上のフォームに条件を入力して「収集開始」を押してください。
+    
+    **🤖 自動収集のしくみ**
+    1. **Google Maps** で企業を検索・一覧取得
+    2. 各企業のWebサイトへアクセスし、**Web解析** を実行
+    3. **フォームの有無** や **Webカタログ(PDF/電子ブック)** を自動判定
+    
+    👉 完了するとリストが表示され、Excel/CSV出力が可能になります。
+    """)

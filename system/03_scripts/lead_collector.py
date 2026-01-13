@@ -118,7 +118,9 @@ async def collect_leads(keyword, max_results=20, progress_callback=None):
              raise RuntimeError(f"ブラウザの起動に失敗しました。Streamlit Cloud環境では playwright install chromium が必要です。 {str(e)}")
             
         context = await browser.new_context(
-            user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            locale="ja-JP",
+            timezone_id="Asia/Tokyo"
         )
         page = await context.new_page()
         
