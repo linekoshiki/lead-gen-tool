@@ -199,36 +199,39 @@ if start_btn:
     if not region or not industry:
         st.warning("「地域」と「業種」を入力してください")
     else:
-        keyword = f"{region} {industry} {others}".strip()
-        
-        progress_area = st.empty()
-        
-        def update_progress(current, total, status):
-            pct = int((current / total) * 10 if total > 0 else 0)
-            bar = "▓" * pct + "░" * (10 - pct)
-            progress_area.info(f"【収集進行中】 {status}  [{bar}] {current}/{total if total > 0 else '?'}")
-        
-        results = asyncio.run(collect_leads(keyword, count, update_progress))
-        progress_area.empty()
-        
-        if results:
-            df = pd.DataFrame(results)
-            # カラムの並び順を調整（ユーザー指定の順序：SNSの右横にWebカタログ）
-            cols = ["業種", "企業名", "Webサイト", "電話番号", "問合せフォーム", "SNS", "Webカタログ", "住所", "備考", "収集日"]
-            # 実際に存在するカラムだけで構成
-            existing_cols = [c for c in cols if c in df.columns]
-            rest_cols = [c for c in df.columns if c not in existing_cols]
-            df = df[existing_cols + rest_cols]
+        try:
+            keyword = f"{region} {industry} {others}".strip()
             
-            st.session_state.leads_df = df
-            st.session_state.visible_count = 20 # リセット
+            progress_area = st.empty()
             
-            # 自動保存
-            output_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../02_output"))
-            os.makedirs(output_dir, exist_ok=True)
-            df.to_excel(os.path.join(output_dir, f"営業リスト_{datetime.now().strftime('%y%m%d_%H%M')}.xlsx"), index=False)
+            def update_progress(current, total, status):
+                pct = int((current / total) * 10 if total > 0 else 0)
+                bar = "▓" * pct + "░" * (10 - pct)
+                progress_area.info(f"【収集進行中】 {status}  [{bar}] {current}/{total if total > 0 else '?'}")
             
-            st.rerun()
+            results = asyncio.run(collect_leads(keyword, count, update_progress))
+            progress_area.empty()
+            
+            if results:
+                df = pd.DataFrame(results)
+                # カラムの並び順を調整（ユーザー指定の順序：SNSの右横にWebカタログ）
+                cols = ["業種", "企業名", "Webサイト", "電話番号", "問合せフォーム", "SNS", "Webカタログ", "住所", "備考", "収集日"]
+                # 実際に存在するカラムだけで構成
+                existing_cols = [c for c in cols if c in df.columns]
+                rest_cols = [c for c in df.columns if c not in existing_cols]
+                df = df[existing_cols + rest_cols]
+                
+                st.session_state.leads_df = df
+                st.session_state.visible_count = 20 # リセット
+                
+                # 自動保存
+                output_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../02_output"))
+                os.makedirs(output_dir, exist_ok=True)
+                df.to_excel(os.path.join(output_dir, f"営業リスト_{datetime.now().strftime('%y%m%d_%H%M')}.xlsx"), index=False)
+                
+                st.rerun()
+            else:
+                st.error("おっと、情報が見つかりませんでした。条件を変えて試してみてください。")
         except Exception as e:
             progress_area.empty()
             st.error(f"❌ 収集中にエラーが発生しました")
