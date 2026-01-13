@@ -11,6 +11,7 @@ __pycache__/
 # Logs
 *.txt
 !requirements.txt
+!packages.txt
 *.log
 
 # System files

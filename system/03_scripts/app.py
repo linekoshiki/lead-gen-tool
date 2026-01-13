@@ -5,9 +5,34 @@ from lead_collector import collect_leads
 import os
 from datetime import datetime
 import io
+import subprocess
+import traceback
 
 # Page Config - フルワイド
 st.set_page_config(page_title="営業リスト収集", page_icon="🚀", layout="wide")
+
+# ==========================================
+# 環境セットアップ (Streamlit Cloud対策)
+# ==========================================
+@st.cache_resource
+def ensure_playwright_browsers():
+    """Streamlit Cloud環境でPlaywrightのブラウザが不足している場合にインストールを試みる"""
+    try:
+        # ブラウザが起動できるか軽量なテスト
+        import subprocess
+        # st.info("Checking Playwright environment...")
+        res = subprocess.run(["playwright", "install", "chromium"], capture_output=True, text=True)
+        if res.returncode != 0:
+            # alternative command
+            subprocess.run(["python", "-m", "playwright", "install", "chromium"], capture_output=True)
+        return True
+    except Exception as e:
+        st.error(f"Playwrightのセットアップ中にエラーが発生しました: {e}")
+        return False
+
+# 起動時に実行
+if os.environ.get("STREAMLIT_RUNTIME_DEBUG") is None: # 通常のStreamlit環境
+     ensure_playwright_browsers()
 
 # Custom CSS - ミニマルUX & スティッキーヘッダー
 st.markdown("""
@@ -204,8 +229,12 @@ if start_btn:
             df.to_excel(os.path.join(output_dir, f"営業リスト_{datetime.now().strftime('%y%m%d_%H%M')}.xlsx"), index=False)
             
             st.rerun()
-        else:
-            st.error("おっと、情報が見つかりませんでした。条件を変えて試してみてください。")
+        except Exception as e:
+            progress_area.empty()
+            st.error(f"❌ 収集中にエラーが発生しました")
+            with st.expander("エラー詳細を表示"):
+                st.code(traceback.format_exc())
+            st.info("💡 ヒント: Streamlit Cloudの場合、一度アプリを再起動（Reboot）するとブラウザが正しくインストールされることがあります。")
 
 # リスト表示
 if st.session_state.leads_df is not None:

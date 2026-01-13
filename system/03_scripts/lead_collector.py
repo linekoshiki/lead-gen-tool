@@ -110,12 +110,12 @@ async def collect_leads(keyword, max_results=20, progress_callback=None):
     
     async with async_playwright() as p:
         report_progress(0, max_results, "🌐 ブラウザを起動中... (Web解析モード)")
-        if max_results > 50:
-            # 大量取得時はヘッドレス推奨
-            browser = await p.chromium.launch(headless=True)
-        else:
-             # 少量ならデバッグしやすいように見える場合もあるが、安定性のためTrue
-            browser = await p.chromium.launch(headless=True)
+        try:
+            # Linuxサーバー環境（Streamlit Cloud等）での安定動作のためオプションを追加
+            launch_args = ["--no-sandbox", "--disable-dev-shm-usage", "--disable-setuid-sandbox"]
+            browser = await p.chromium.launch(headless=True, args=launch_args)
+        except Exception as e:
+             raise RuntimeError(f"ブラウザの起動に失敗しました。Streamlit Cloud環境では playwright install chromium が必要です。 {str(e)}")
             
         context = await browser.new_context(
             user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
